@@ -1,4 +1,4 @@
-click_edit
+click-edit
 ==========
 
 to make it editable by clicking
