@@ -1,47 +1,78 @@
 (function($) {
 
-	$.fn.ce = function(options) {
+	$.fn.ce = function( options ) {
 
+		// default
 		var defaults = {
-			defColor: "#ff6699",
-			defPadding: 5
+			width: 100 // 'fit' or a numerical value. 'fit' -> fit the target width
 		}
 
-		var setting = $.extend(defaults, options);
+		var setting = $.extend( defaults, options );
 
 		var count = 0;
 
-		return this.each(function() {
-			
-			var edit = $(this);
-			edit.data('ce', count);
+		$('body').append('<div class="ce-overlay"></div>');
+		var $overlay = $('.ce-overlay');
+		$overlay.height($('html, body').height());
 
-			var editOffset = edit.offset();
+		return this.each(function() {
+	
+			$('body').append('<input class="ce-input" id="ce-'+count+'">');
+
+			var $this = $(this);
+			var $editBox = $('#ce-'+count);
+
+			var editOffset = $this.offset();
 			var editTop = editOffset.top;
 			var editLeft = editOffset.left;
 
-			$('body').append('<input id="ce-'+count+'">');
-			var editBox = $('#ce-'+count);
-			editBox.hide();
-			editBox.addClass('ce');
-			editBox.val(edit.text());
-			editBox.css({
+			$this.attr('data-ce', count);
+		
+			$editBox.hide();
+
+			if (setting['width'] == 'fit') {
+				$editBox.width( $this.width() );
+			} else {
+				$editBox.width( setting['width'] );
+			};
+
+			$editBox.addClass('ce');
+			$editBox.val($this.text());
+			$editBox.css({
 				'position': 'absolute',
 				'top': editTop + 'px',
 				'left': editLeft + 'px'
-			})
-
-			edit.on('dblclick', function() {
-				$(this).hide();
-				editBox.show();
 			});
 
-			$(document).on('click', function(event) {
-				if (!$.contains($('#ce-'+count)[0], event.target)) {
-					console.log($(this));
-					editBox.hide();
-					edit.show();
-				}
+			$this.on('dblclick', function() {
+				$(this).css('opacity', 0);
+				$editBox.show();
+
+				$overlay.css({
+					'zIndex': 999
+				});
+				$editBox.css({
+					'zIndex': 1000
+				});
+
+			});
+
+			$editBox.on('keyup', function() {
+				$('[data-ce="' + $(this).attr('id').replace('ce-', '') + '"]').text($(this).val());
+			});
+
+			$overlay.on('click', function(event) {
+				$editBox
+					.hide()
+					.css({
+						'zIndex': 0
+					});
+
+				$this.css('opacity', 1);
+
+				$overlay.css({
+					'zIndex': -1
+				});
 			});
 
 			count++;
