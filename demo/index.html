@@ -16,6 +16,10 @@
 	<script type="text/javascript">
 		$(function(){
 			$('p').ce();
+			$('td').ce({
+				width: 'fit',
+				height: 'fit'
+			});
 		});
 	</script>
 </head>
@@ -23,6 +27,26 @@
 
 <p>editable1</p>
 <p>editable2</p>
+
+<table>
+	<tbody>
+		<tr>
+			<th>A</th>
+			<th>B</th>
+			<th>C</th>
+		</tr>
+		<tr>
+			<td>aaaa</td>
+			<td>bbbb</td>
+			<td>cccc</td>
+		</tr>
+		<tr>
+			<td>AAAAA</td>
+			<td>BBB</td>
+			<td>CCCCCCC</td>
+		</tr>
+	</tbody>
+</table>
 
 </body>
 </html>
