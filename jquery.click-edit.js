@@ -14,33 +14,44 @@
 
 		init : function( options ) {
 
-			var count = $('[data-ce]').size();
-
 			return this.each(function() {
 				
 				this.self = $(this);
-				this.self.attr('data-ce', count);
 
-				this.opt = $.extend(true, {}, $.fn.ce.defaults, options);
+				var data = this.self.data('ce');
+				var count = $('.ce').size();
 
-				methods._createEditField.call(this);
+				if (!data) {
 
-				if (this.opt.editButton) {
-					methods._createEditButton.call(this);
-				} else {
-					methods._bindDblClick.call(this);
-					methods._bindOverLayClick.call(this);
+					this.self.data('ce', {
+						target: this.self,
+						count: count
+					});
+
+					this.self.addClass('ce');
+
+					this.opt = $.extend(true, {}, $.fn.ce.defaults, options);
+
+					methods._createEditField.call(this);
+
+					if (this.opt.editButton) {
+						methods._createEditButton.call(this);
+					} else {
+						methods._bindDblClick.call(this);
+						methods._bindOverLayClick.call(this);
+					}
+
+					if (this.opt.finishButton) {
+						methods._createFinishButton.call(this);
+					}
+
+					if (this.opt.cancelButton) {
+						methods._createCancelButton.call(this);
+					}
+
+					count++;
+
 				}
-
-				if (this.opt.finishButton) {
-					methods._createFinishButton.call(this);
-				}
-
-				if (this.opt.cancelButton) {
-					methods._createCancelButton.call(this);
-				}
-
-				count++;
 
 			});
 
@@ -57,6 +68,7 @@
 		_bindOverLayClick: function() {
 
 			var that = this;
+
 			that.overlay.on('click.ce', function() {
 				methods.finish.call(that);
 				methods._changeVal.call(that, that.editInput.val());
@@ -74,6 +86,7 @@
 		_changeVal: function(changed) {
 
 			var that = this;
+
 			var before = that.self.text();
 
 			if (that.opt.beforeChangeVal !== undefined) {
@@ -83,7 +96,7 @@
 			that.self.html(nl2br(changed));
 
 			if (that.opt.afterChangeVal !== undefined) {
-				that.opt.afterChangeVal(before, changed);
+				that.opt.afterChangeVal(that.self, before, changed);
 			}
 
 		},
@@ -91,8 +104,9 @@
 		_createCancelButton: function() {
 
 			var that = this;
+
 			var cancelText = that.opt.cancelText;
-			var count = that.self.data('ce');
+			var count = that.self.data('ce').count;
 			that.editField.append('<button class="ce-button ce-cancel-button ce-cancel-button-' + count + '">' + cancelText + '</button>');
 			that.cancelButton = $('.ce-cancel-button-' + count);
 			that.cancelButton.on('click', function() {
@@ -103,13 +117,16 @@
 				that.cancelButton.addClass(that.opt.cancelButtonClass);
 			}
 
+			that.self.data('ce').cancelButton = that.cancelButton;
+
 		},
 
 		_createEditButton: function() {
 
 			var that = this;
+
 			var editText = that.opt.editText;
-			var count = that.self.data('ce');
+			var count = that.self.data('ce').count;
 			that.self.after('<button class="ce-button ce-edit-button ce-edit-button-' + count + '">' + editText + '</button>');
 			that.editButton = $('.ce-edit-button-' + count);
 			that.editButton.on('click', function() {
@@ -120,6 +137,8 @@
 			if (that.opt.editButtonClass) {
 				that.editButton.addClass(that.opt.editButtonClass);
 			}
+
+			that.self.data('ce').editButton = that.editButton;
 
 		},
 
@@ -147,13 +166,16 @@
 
 			methods._createOverLay.call(this);
 
+			this.self.data('ce').editField = this.editField;
+
 		},
 
 		_createFinishButton: function() {
 
 			var that = this;
+
 			var finishText = that.opt.finishText;
-			var count = that.self.data('ce');
+			var count = that.self.data('ce').count;
 			that.editField.append('<button class="ce-button ce-finish-button ce-finish-button-' + count + '">' + finishText + '</button>');
 			that.finishButton = $('.ce-finish-button-' + count);
 			that.finishButton.on('click.ce', function() {
@@ -165,6 +187,8 @@
 				that.finishButton.addClass(that.opt.finishButtonClass);
 			}
 
+			that.self.data('ce').finishButton = that.finishButton;
+
 		},
 
 		_createOverLay: function() {
@@ -174,6 +198,8 @@
 			var overlaySize = $('.ce-overlay').size();
 			$('body').append('<div class="ce-overlay ce-overlay-' + overlaySize + '"></div>');
 			that.overlay = $('.ce-overlay-' + overlaySize);
+
+			that.self.data('ce').overlay = that.overlay;
 
 		},
 
@@ -245,6 +271,35 @@
 
 		},
 
+		cancel: function() {
+
+			this.each(function() {
+
+				methods._cancel.call(this);
+
+			});
+
+		},
+
+		destroy: function() {
+
+			return this.each(function() {
+
+				var $this = $(this);
+				var data = $this.data('ce');
+
+				$(window).off('.ce');
+				data.finishButton.remove();
+				data.cancelButton.remove();
+				data.overlay.remove();
+				data.editButton.remove();
+				data.editField.remove();
+				$this.removeData('ce');
+
+			});
+
+		},
+
 		finish: function() {
 
 			this.editField
@@ -269,16 +324,6 @@
 			this.each(function() {
 
 				methods._show.call(this);
-
-			});
-
-		},
-
-		cancel: function() {
-
-			this.each(function() {
-
-				methods._cancel.call(this);
 
 			});
 

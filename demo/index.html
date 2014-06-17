@@ -13,11 +13,11 @@
 					editButton: true,
 					finishButton: true,
 					cancelButton: true,
-					afterChangeVal: function(b, a) {
-						console.log('finished', b, a);
+					afterChangeVal: function(e, b, a) {
+						console.log('finished', e, b, a);
 					},
 					afterShow: function(a, b, c) {
-						console.log(a, b, c);					
+						console.log(a, b, c);
 					}
 				})
 			});
@@ -26,17 +26,18 @@
 				width: 'fit',
 				height: 'fit'
 			});
-			$('#test').click(function() {
-				$('p').ce('show');
+			$('#destroy').click(function() {
+				$('#p1').ce('destroy');
 			});
 		});
 	</script>
 </head>
 <body>
 
-<p id="aa">editable1</p>
-<button id="test">a</button>
+<p id="p1">editable1</p>
 <p>editable2</p>
+
+<button id="destroy">destroy first p</button>
 
 <table>
 	<tbody>
