@@ -4,6 +4,7 @@
 	color: #333;
 	box-sizing: border-box;
 	font-family: inherit;
+	padding: 0;
 }
 
 .ce-overlay {
@@ -12,6 +13,7 @@
 	width: 100%;
 	height: 100%;
 	z-index: -1;
+	display: none;
 }
 
 .ce-button {

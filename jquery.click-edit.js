@@ -1,3 +1,10 @@
+/*
+ * jQuery Click Edit
+ *
+ * @author  : Yutaka Tajika
+ *
+ */
+
 ;
 (function($) {
 
@@ -17,17 +24,20 @@
 				this.opt = $.extend(true, {}, $.fn.ce.defaults, options);
 
 				methods._createEditField.call(this);
-				methods._binds.call(this);
-			
-				// this.opt - height
-				if (this.opt['height'] == 'fit') {
 
-					this.editInput.height( this.self.height() );
-
+				if (this.opt.editButton) {
+					methods._createEditButton.call(this);
 				} else {
+					methods._bindDblClick.call(this);
+					methods._bindOverLayClick.call(this);
+				}
 
-					this.editInput.height( this.opt['height'] );
+				if (this.opt.finishButton) {
+					methods._createFinishButton.call(this);
+				}
 
+				if (this.opt.cancelButton) {
+					methods._createCancelButton.call(this);
 				}
 
 				count++;
@@ -36,41 +46,45 @@
 
 		},
 
-		_binds: function() {
-			if (this.opt.editButton) {
-				methods._createEditButton.call(this);
-			} else {
-				methods._bindDblClick.call(this);
-				methods._bindOverLayClick.call(this);
-			}
-			if (this.opt.finishButton) {
-				methods._createFinishButton.call(this);
-			}
-			if (this.opt.cancelButton) {
-				methods._createCancelButton.call(this);
-			}
-		},
-
 		_bindDblClick: function() {
-			this.self.on('dblclick', function(event) {
-				methods.start.call(this);
+
+			this.self.on('dblclick.ce', function(event) {
+				methods._show.call(this);
 			});
+
 		},
 
 		_bindOverLayClick: function() {
+
 			var that = this;
-			that.overlay.on('click', function() {
+			that.overlay.on('click.ce', function() {
 				methods.finish.call(that);
 				methods._changeVal.call(that, that.editInput.val());
 			});
+
+		},
+
+		_cancel: function(val) {
+
+			methods.finish.call(this);
+			methods._setVal.call(this, val);
+
 		},
 
 		_changeVal: function(changed) {
 
-			var before = this.self.text();
+			var that = this;
+			var before = that.self.text();
 
-			this.self.html(nl2br(changed));
-			this.opt.afterChangeVal(before, changed);
+			if (that.opt.beforeChangeVal !== undefined) {
+				that.opt.beforeChangeVal(before, changed);
+			}
+
+			that.self.html(nl2br(changed));
+
+			if (that.opt.afterChangeVal !== undefined) {
+				that.opt.afterChangeVal(before, changed);
+			}
 
 		},
 
@@ -82,9 +96,12 @@
 			that.editField.append('<button class="ce-button ce-cancel-button ce-cancel-button-' + count + '">' + cancelText + '</button>');
 			that.cancelButton = $('.ce-cancel-button-' + count);
 			that.cancelButton.on('click', function() {
-				methods.finish.call(that);
-				methods._setVal.call(that, that.self.text());
+				methods._cancel.call(that, that.editInput.val());
 			});
+
+			if (that.opt.cancelButtonClass) {
+				that.cancelButton.addClass(that.opt.cancelButtonClass);
+			}
 
 		},
 
@@ -97,8 +114,12 @@
 			that.editButton = $('.ce-edit-button-' + count);
 			that.editButton.on('click', function() {
 				$(this).hide();
-				methods.start.call(that);
+				methods._show.call(that);
 			});
+
+			if (that.opt.editButtonClass) {
+				that.editButton.addClass(that.opt.editButtonClass);
+			}
 
 		},
 
@@ -118,11 +139,10 @@
 			}
 	
 			// set edit area
-			$('body').append('<div id="ce-'+count+'">' + input + '<input type="hidden" class="ce-edit-trigger"></div>');
+			$('body').append('<div id="ce-'+count+'">' + input + '</div>');
 
 			this.editField = $('#ce-'+count);
 			this.editInput = this.editField.find('.ce-edit-box');
-			this.editTrigger = this.editField.find('.ce-edit-trigger');
 			this.editField.hide();
 
 			methods._createOverLay.call(this);
@@ -135,11 +155,15 @@
 			var finishText = that.opt.finishText;
 			var count = that.self.data('ce');
 			that.editField.append('<button class="ce-button ce-finish-button ce-finish-button-' + count + '">' + finishText + '</button>');
-			that.finishButton = $('.ce-finish-button-' + count)
-			that.finishButton.on('click', function() {
+			that.finishButton = $('.ce-finish-button-' + count);
+			that.finishButton.on('click.ce', function() {
 				methods.finish.call(that);
 				methods._changeVal.call(that, that.editInput.val());
 			});
+
+			if (that.opt.finishButtonClass) {
+				that.finishButton.addClass(that.opt.finishButtonClass);
+			}
 
 		},
 
@@ -150,7 +174,21 @@
 			var overlaySize = $('.ce-overlay').size();
 			$('body').append('<div class="ce-overlay ce-overlay-' + overlaySize + '"></div>');
 			that.overlay = $('.ce-overlay-' + overlaySize);
-			that.overlay.height($('html, body').height());
+
+		},
+
+		_setHeight: function() {
+
+			// this.opt - height
+			if (this.opt.height == 'fit') {
+
+				this.editInput.height( this.self.height() );
+
+			} else {
+
+				this.editInput.height( this.opt.height );
+
+			}
 
 		},
 
@@ -175,6 +213,38 @@
 
 		},
 
+		_show: function() {
+
+			var editOffset = this.self.offset();
+			var editTop = editOffset.top;
+			var editLeft = editOffset.left;
+
+			this.self.css('opacity', 0);
+
+			this.overlay
+				.css({
+					'zIndex': 999
+				})
+				.show()
+				.height($('html, body').height());
+
+			this.editField
+				.show()
+				.css({
+					'position': 'absolute',
+					'top': editTop + 'px',
+					'left': editLeft + 'px',
+					'zIndex': 1000
+				});
+
+			methods._setVal.call(this, br2nl(this.self.html()));
+			methods._setWidth.call(this);
+			methods._setHeight.call(this);
+
+			this.opt.afterShow(this.self, this.editInput, this.editInput.val());
+
+		},
+
 		finish: function() {
 
 			this.editField
@@ -187,34 +257,30 @@
 
 			this.self.css('opacity', 1);
 
+			this.overlay.hide();
 			this.overlay.css({
-				'zIndex': -1
+				'zIndex': -1,
 			});
 
 		},
 
-		start: function() {
+		show: function() {
 
-			var editOffset = this.self.offset();
-			var editTop = editOffset.top;
-			var editLeft = editOffset.left;
+			this.each(function() {
 
-			this.self.css('opacity', 0);
+				methods._show.call(this);
 
-			this.overlay.css({
-				'zIndex': 999
-			});
-			this.editField
-			.show()
-			.css({
-				'position': 'absolute',
-				'top': editTop + 'px',
-				'left': editLeft + 'px',
-				'zIndex': 1000
 			});
 
-			methods._setVal.call(this, this.self.text());
-			methods._setWidth.call(this);
+		},
+
+		cancel: function() {
+
+			this.each(function() {
+
+				methods._cancel.call(this);
+
+			});
 
 		}
 
@@ -234,21 +300,32 @@
 
 	// default
 	$.fn.ce.defaults = {
-		type: 'input', // 'input' or 'textarea'
-		width: 100, // 'fit' or a numerical value. 'fit' -> fit the target width
-		height: 'fit', // 'auto' or 'fit' or a numerical value.
-		editButton: false,
-		editText: 'Edit',
-		finishButton: false,
-		finishText: 'OK',
-		cancelButton: false,
-		cancelText: 'Cancel',
-		afterChangeVal: function() {}
+		afterChangeVal     : function() {},
+		afterShow          : function() {},
+		beforeChangeVal    : function() {},
+		cancelButton       : false,
+		cancelButtonClass  : null,
+		cancelText         : 'Cancel',
+		editButton         : false,
+		editButtonClass    : null,
+		editText           : 'Edit',
+		finishButton       : false,
+		finishButtonClass  : null,
+		finishText         : 'OK',
+		height             : 'fit', // 'auto' or 'fit' or a numerical value.
+		type               : 'input', // 'input' or 'textarea'
+		width              : 100 // 'fit' or a numerical value. 'fit' -> fit the target width
 	};
 
 	function nl2br (str) {
 
 		return str.replace(/[\n\r]/g, "<br />");
+
+	}
+
+	function br2nl (str) {
+
+		return str.replace(/<br\s*\/?>/mg,"\n");
 
 	}
 

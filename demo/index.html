@@ -7,25 +7,35 @@
 	<script type="text/javascript" src="../jquery.click-edit.js"></script>
 	<script type="text/javascript">
 		$(function(){
-			$('p').ce({
-				editButton: true,
-				finishButton: true,
-				cancelButton: true,
-				afterChangeVal: function(b, a) {
-					console.log('finished', b, a);
-				}
+			$('p').each(function() {
+				var $this = $(this);
+				$this.ce({
+					editButton: true,
+					finishButton: true,
+					cancelButton: true,
+					afterChangeVal: function(b, a) {
+						console.log('finished', b, a);
+					},
+					afterShow: function(a, b, c) {
+						console.log(a, b, c);					
+					}
+				})
 			});
 			$('td').ce({
 				type: 'textarea',
 				width: 'fit',
 				height: 'fit'
 			});
+			$('#test').click(function() {
+				$('p').ce('show');
+			});
 		});
 	</script>
 </head>
 <body>
 
-<p>editable1</p>
+<p id="aa">editable1</p>
+<button id="test">a</button>
 <p>editable2</p>
 
 <table>
