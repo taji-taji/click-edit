@@ -1,0 +1,29 @@
+.ce-edit-box {
+	border: 1px solid #ccc;
+	font-size: 1em;
+	color: #333;
+	box-sizing: border-box;
+	font-family: inherit;
+}
+
+.ce-overlay {
+	position: absolute;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	z-index: -1;
+}
+
+.ce-button {
+	border: none;
+	font-size: 0.8em;
+	background: #ddd;
+}
+
+.ce-finish-button {
+	background: #BAFFDB;
+}
+
+.ce-cancel-button {
+	background: #FFD0D0;
+}

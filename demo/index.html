@@ -1,22 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title></title>
-	<style type="text/css">
-	.ce-overlay {
-		position: absolute;
-		top: 0;
-		width: 100%;
-		height: 100%;
-		z-index: -1;
-	}
-	</style>
+	<title>click-edit DEMO</title>
+	<link rel="stylesheet" type="text/css" href="../click-edit.css">
 	<script src="jquery.min.js"></script>
 	<script type="text/javascript" src="../jquery.click-edit.js"></script>
 	<script type="text/javascript">
 		$(function(){
-			$('p').ce();
+			$('p').ce({
+				editButton: true,
+				finishButton: true,
+				cancelButton: true,
+				afterChangeVal: function(b, a) {
+					console.log('finished', b, a);
+				}
+			});
 			$('td').ce({
+				type: 'textarea',
 				width: 'fit',
 				height: 'fit'
 			});

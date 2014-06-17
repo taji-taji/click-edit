@@ -1,205 +1,250 @@
+;
 (function($) {
 
-	$.fn.ce = function( options ) {
+	'use strict';
 
-		// default
-		var defaults = {
-			type: 'input', // 'input' or 'textarea'
-			width: 100, // 'fit' or a numerical value. 'fit' -> fit the target width
-			height: 'auto', // 'auto' or 'fit' or a numerical value.
-			editButton: false,
-			editText: 'Edit',
-			finishButton: false,
-			finishText: 'OK',
-			cancelButton: false,
-			cancelText: 'Cancel'
-		}
+	var methods = {
 
-		var setting = $.extend( defaults, options );
+		init : function( options ) {
 
-		var count = $('[data-ce]').size();
+			var count = $('[data-ce]').size();
 
-		// set overlay
-		$('body').append('<div class="ce-overlay"></div>');
-		var $overlay = $('.ce-overlay');
-		$overlay.height($('html, body').height());
+			return this.each(function() {
+				
+				this.self = $(this);
+				this.self.attr('data-ce', count);
 
-		return this.each(function() {
+				this.opt = $.extend(true, {}, $.fn.ce.defaults, options);
 
-			var editArea;
+				methods._createEditField.call(this);
+				methods._binds.call(this);
+			
+				// this.opt - height
+				if (this.opt['height'] == 'fit') {
 
-			if (setting['type'] == 'input') {
+					this.editInput.height( this.self.height() );
 
-				editArea = '<input type="text" class="ce-edit-box">';
+				} else {
 
-			} else if (setting['type'] == 'textarea') {
+					this.editInput.height( this.opt['height'] );
 
-				editArea = '<textarea class="ce-edit-box"></textarea>';
+				}
+
+				count++;
+
+			});
+
+		},
+
+		_binds: function() {
+			if (this.opt.editButton) {
+				methods._createEditButton.call(this);
+			} else {
+				methods._bindDblClick.call(this);
+				methods._bindOverLayClick.call(this);
+			}
+			if (this.opt.finishButton) {
+				methods._createFinishButton.call(this);
+			}
+			if (this.opt.cancelButton) {
+				methods._createCancelButton.call(this);
+			}
+		},
+
+		_bindDblClick: function() {
+			this.self.on('dblclick', function(event) {
+				methods.start.call(this);
+			});
+		},
+
+		_bindOverLayClick: function() {
+			var that = this;
+			that.overlay.on('click', function() {
+				methods.finish.call(that);
+				methods._changeVal.call(that, that.editInput.val());
+			});
+		},
+
+		_changeVal: function(changed) {
+
+			var before = this.self.text();
+
+			this.self.html(nl2br(changed));
+			this.opt.afterChangeVal(before, changed);
+
+		},
+
+		_createCancelButton: function() {
+
+			var that = this;
+			var cancelText = that.opt.cancelText;
+			var count = that.self.data('ce');
+			that.editField.append('<button class="ce-button ce-cancel-button ce-cancel-button-' + count + '">' + cancelText + '</button>');
+			that.cancelButton = $('.ce-cancel-button-' + count);
+			that.cancelButton.on('click', function() {
+				methods.finish.call(that);
+				methods._setVal.call(that, that.self.text());
+			});
+
+		},
+
+		_createEditButton: function() {
+
+			var that = this;
+			var editText = that.opt.editText;
+			var count = that.self.data('ce');
+			that.self.after('<button class="ce-button ce-edit-button ce-edit-button-' + count + '">' + editText + '</button>');
+			that.editButton = $('.ce-edit-button-' + count);
+			that.editButton.on('click', function() {
+				$(this).hide();
+				methods.start.call(that);
+			});
+
+		},
+
+		_createEditField: function() {
+
+			var input;
+			var count = $('.ce-edit-box').size();
+
+			if (this.opt.type == 'input') {
+
+				input = '<input type="text" class="ce-edit-box">';
+
+			} else if (this.opt.type == 'textarea') {
+
+				input = '<textarea class="ce-edit-box"></textarea>';
 
 			}
 	
 			// set edit area
-			$('body').append('<div id="ce-'+count+'">' + editArea + '<input type="hidden" class="ce-edit-trigger"></div>');
+			$('body').append('<div id="ce-'+count+'">' + input + '<input type="hidden" class="ce-edit-trigger"></div>');
 
-			var $this = $(this);
-			var $editBox = $('#ce-'+count);
-			var $editInput = $editBox.find('.ce-edit-box');
-			var $editTrigger = $editBox.find('.ce-edit-trigger');
-			var fitWidth = false; // widthをfitさせるか
+			this.editField = $('#ce-'+count);
+			this.editInput = this.editField.find('.ce-edit-box');
+			this.editTrigger = this.editField.find('.ce-edit-trigger');
+			this.editField.hide();
 
-			$this.attr('data-ce', count);
-		
-			$editBox.hide();
+			methods._createOverLay.call(this);
 
-			$editInput.addClass('ce');
-			setVal($editInput, $this.text());
+		},
 
-			// setting - width
-			if (setting['width'] == 'fit') {
+		_createFinishButton: function() {
 
-				$editInput.width( $this.width() );
-				fitWidth = true;
-
-			} else {
-
-				$editInput.width( setting['width'] );
-
-			}
-
-			// setting - height
-			if (setting['height'] == 'fit') {
-
-				$editInput.height( $this.height() );
-
-			} else {
-
-				$editInput.height( setting['height'] );
-
-			}
-
-			// setting - editButton
-			if (setting['editButton']) {
-
-				editText = setting['editText'];
-
-				$this.after('<button class="ce-edit-button ce-edit-button-' + count + '">' + editText + '</button>');
-				$('.ce-edit-button-' + count).on('click', function() {
-					$(this).hide();
-					start($this, $editBox, $overlay, fitWidth);
-				});
-
-			} else {
-
-				$this.on('dblclick', function() {
-					start($this, $editBox, $overlay, fitWidth);
-				});
-
-			}
-
-			// setting - finishButton
-			if (setting['finishButton']) {
-
-				finishText = setting['finishText'];
-				$editBox.append('<button class="ce-edit-button ce-finish-button-' + count + '">' + finishText + '</button>');
-				$('.ce-finish-button-' + count).on('click', function() {
-					$editTrigger.change();
-				});
-
-			} else {
-
-				$overlay.on('click', function() {
-					$editTrigger.change();
-				});
-
-			}
-
-			// setting - cancelButton
-			if (setting['cancelButton']) {
-
-				cancelText = setting['cancelText'];
-				$editBox.append('<button class="ce-edit-button ce-cancel-button-' + count + '">' + cancelText + '</button>');
-				$('.ce-cancel-button-' + count).on('click', function() {
-					finish ($this, $editBox, $overlay);
-					setVal($editInput, $this.text());
-
-				});
-
-			} else {
-
-				$overlay.on('click', function() {
-					$editTrigger.change();
-				});
-
-			}
-
-			$editTrigger.on('change', function() {
-				valChange($editBox.attr('id').replace('ce-', ''), $editInput.val());
-				finish($this, $editBox, $overlay);
+			var that = this;
+			var finishText = that.opt.finishText;
+			var count = that.self.data('ce');
+			that.editField.append('<button class="ce-button ce-finish-button ce-finish-button-' + count + '">' + finishText + '</button>');
+			that.finishButton = $('.ce-finish-button-' + count)
+			that.finishButton.on('click', function() {
+				methods.finish.call(that);
+				methods._changeVal.call(that, that.editInput.val());
 			});
 
-			count++;
+		},
 
-		});
+		_createOverLay: function() {
 
+			var that = this;
 
-	}
+			var overlaySize = $('.ce-overlay').size();
+			$('body').append('<div class="ce-overlay ce-overlay-' + overlaySize + '"></div>');
+			that.overlay = $('.ce-overlay-' + overlaySize);
+			that.overlay.height($('html, body').height());
 
-	function setVal ( target, text ) {
+		},
 
-		target.val(text);
+		_setVal: function(val) {
 
-	}
+			this.editInput.val(val);
 
-	function start ( target, editBox, overlay, fit ) {
+		},
 
-		var editOffset = target.offset();
-		var editTop = editOffset.top;
-		var editLeft = editOffset.left;
-		var w = target.width();
+		_setWidth: function() {
 
-		target.css('opacity', 0);
+			// this.opt - width
+			if (this.opt.width == 'fit') {
 
-		overlay.css({
-			'zIndex': 999
-		});
-		editBox
-		.show()
-		.css({
-			'position': 'absolute',
-			'top': editTop + 'px',
-			'left': editLeft + 'px',
-			'zIndex': 1000
-		});
+				this.editInput.width( this.self.width() );
 
-		if (fit) {
-			editBox.find('.ce-edit-box').width(w);
+			} else {
+
+				this.editInput.width( this.opt.width );
+
+			}
+
+		},
+
+		finish: function() {
+
+			this.editField
+				.hide()
+				.css({
+					'zIndex': 0
+				});
+
+			$('.ce-edit-button').show();
+
+			this.self.css('opacity', 1);
+
+			this.overlay.css({
+				'zIndex': -1
+			});
+
+		},
+
+		start: function() {
+
+			var editOffset = this.self.offset();
+			var editTop = editOffset.top;
+			var editLeft = editOffset.left;
+
+			this.self.css('opacity', 0);
+
+			this.overlay.css({
+				'zIndex': 999
+			});
+			this.editField
+			.show()
+			.css({
+				'position': 'absolute',
+				'top': editTop + 'px',
+				'left': editLeft + 'px',
+				'zIndex': 1000
+			});
+
+			methods._setVal.call(this, this.self.text());
+			methods._setWidth.call(this);
+
 		}
 
-	}
+	};
 
-	function valChange ( id, val ) {
+	$.fn.ce = function( method ) {
 
-		$('[data-ce="' + id + '"]').html(nl2br(val));
+		if ( methods[method] ) {
+			return methods[ method ].apply( this, Array.prototype.slice.call( arguments, 1 ));
+		} else if ( typeof method === 'object' || ! method ) {
+			return methods.init.apply( this, arguments );
+		} else {
+			$.error( 'Method ' +  method + ' does not exist!' );
+		}
 
-	}
+	};
 
-	function finish ( target, editBox, overlay ) {
-
-		editBox
-			.hide()
-			.css({
-				'zIndex': 0
-			});
-
-		$('.ce-edit-button').show();
-
-		target.css('opacity', 1);
-
-		overlay.css({
-			'zIndex': -1
-		});
-
-	}
+	// default
+	$.fn.ce.defaults = {
+		type: 'input', // 'input' or 'textarea'
+		width: 100, // 'fit' or a numerical value. 'fit' -> fit the target width
+		height: 'fit', // 'auto' or 'fit' or a numerical value.
+		editButton: false,
+		editText: 'Edit',
+		finishButton: false,
+		finishText: 'OK',
+		cancelButton: false,
+		cancelText: 'Cancel',
+		afterChangeVal: function() {}
+	};
 
 	function nl2br (str) {
 
